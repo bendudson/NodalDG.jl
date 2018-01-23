@@ -13,5 +13,7 @@ include("grid1d.jl")
 
 include("meshgen1d.jl")
 
+include("lserk.jl")
+
 end
 
