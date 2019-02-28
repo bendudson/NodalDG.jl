@@ -1,4 +1,8 @@
 
+using LinearAlgebra
+using SparseArrays
+
+
 "Construct the Element-To-Element (EToE) and
 Element-To-Face (EtoF) maps
 "
@@ -26,16 +30,16 @@ function Connect1D(EToV)
     FToV = sparse(FToVrows, FToVcols, FToVvals)
     
     # Global face to global face sparse array
-    FToF = FToV * FToV' - speye(Int, TotalFaces)
+    FToF = FToV * FToV' - I
     
-    faces1, faces2 = findn(FToF) # Find non-zero elements
+    faces1, faces2, _ = findnz(FToF) # Find non-zero elements
     
     
     # Convert face global number to element and face numbers
-    element1 = floor.(Int, (faces1-1)/Nfaces) + 1
-    face1 = mod.( faces1-1, Nfaces ) + 1
-    element2 = floor.(Int, (faces2-1)/Nfaces) + 1
-    face2 = mod.( faces2-1, Nfaces ) + 1
+    element1 = floor.(Int, (faces1 .- 1)/Nfaces) .+ 1
+    face1 = mod.( faces1 .- 1, Nfaces ) .+ 1
+    element2 = floor.(Int, (faces2 .- 1)/Nfaces) .+ 1
+    face2 = mod.( faces2 .- 1, Nfaces ) .+ 1
 
     # Rearrange into Nelements x Nfaces sized arrays
 
@@ -72,7 +76,7 @@ function BuildMaps1D(K::Int, Nfaces::Int, Nfp::Int, Np::Int, Fmask, EToE, EToF, 
     for k1=1:K
         for f1=1:Nfaces
             # find index of face nodes with respect to volume node ordering
-            vmapM[:,f1,k1] = nodeids[Fmask[f1], k1]
+            vmapM[:,f1,k1] .= nodeids[Fmask[f1], k1]
         end
     end
 
@@ -101,7 +105,7 @@ function BuildMaps1D(K::Int, Nfaces::Int, Nfp::Int, Np::Int, Fmask, EToE, EToF, 
     #vmapM = vmapM[:]
 
     # Find where vmapP == vmapM
-    mapB = find(iszero, vmapP - vmapM)
+    mapB = findall(iszero, vmapP - vmapM)
     vmapB = vmapM[mapB]
 
     # Create specific left (inflow) and right (outflow) maps
@@ -194,23 +198,23 @@ mutable struct Grid1D
         # Coordinates of all the nodes
         va = g.EToV[:,1]'
         vb = g.EToV[:,2]'
-        g.x = ones(N+1,1)*g.VX[va] + 0.5*(g.r+1)*(g.VX[vb] - g.VX[va])
+        g.x = ones(N+1,1)*g.VX[va] .+ 0.5*(g.r .+ 1)*(g.VX[vb] - g.VX[va])
 
         # Geometric factors
         g.J = g.Dr * g.x
-        g.rx = 1./g.J
+        g.rx = 1.0 ./ g.J
 
         fmask1 = 1
         fmask2 = N+1
         Fmask = [fmask1;fmask2]
         Fx = g.x[Fmask,:]  # Locations of cell edges for each cell
 
-        g.Fscale = 1./g.J[Fmask,:]
+        g.Fscale = 1.0 ./ g.J[Fmask,:]
         
         # Compute outward pointing normals
         g.nx = zeros(g.Nfaces, g.K)
-        g.nx[1,:] = -1
-        g.nx[2,:] = 1
+        g.nx[1,:] .= -1
+        g.nx[2,:] .= 1
 
         # Build global connectivity arrays
         EToE, EToF = Connect1D(g.EToV)

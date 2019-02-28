@@ -2,7 +2,9 @@
 # Advection in 1D
 #
 
-using NodalDG
+include("NodalDG.jl")
+
+using .NodalDG
 
 "Evaluate RHS flux in 1D advection"
 function AdvecRHS1D(u, time, grid, a)
@@ -39,13 +41,11 @@ function Advec1D(grid, u, time, FinalTime)
     return NodalDG.lserk!(AdvecRHS1D, u,
                           time, FinalTime, dt,
                           args=(grid, a))
-    
-    return u
 end
 
 # Order of polymomials used for approximation 
-N = 3
-K = 12
+N = 5
+K = 5
 
 # Generate simple mesh
 Nv, VX, K, EToV = NodalDG.MeshGen1D(0.0,2.0*pi,K)
@@ -53,20 +53,22 @@ Nv, VX, K, EToV = NodalDG.MeshGen1D(0.0,2.0*pi,K)
 # Initialize solver and construct grid and metric
 grid = NodalDG.Grid1D(VX, EToV, N)
 
-using PyPlot
+using PyPlot: plot, show
 
 
 # Set initial conditions
-u = sin.(grid.x)
+state = sin.(grid.x)
 
 # Solve Problem
 outputDt = 0.1
-time = 0.0
+sim_time = 0.0
+
 for i = 1:10
-    println("Time = ", time)
-    plot(grid.x, u)
-    u = Advec1D(grid, u, time, time + outputDt)
-    time += outputDt
+    global state, sim_time
+    println("Time = ", sim_time)
+    plot(grid.x, state)
+    state = Advec1D(grid, state, sim_time, sim_time + outputDt)
+    sim_time += outputDt
 end
 
 show()
