@@ -1,7 +1,7 @@
 module Testing
 
-using NodalDG
-using Base.Test
+using ..NodalDG
+using Test
 
 VX = [0.0, 1.0, 2.0, 3.0]
 EToV = [1 2; 2 3; 3 4]

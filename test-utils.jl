@@ -1,11 +1,12 @@
 
 module Testing
 
-using NodalDG
-using Base.Test
+import ..NodalDG
+
+using Test
 
 # Simple test of JacobiP
-@test NodalDG.JacobiP(0.0, 0, 0, 0) == [1./sqrt(2.0)]
+@test NodalDG.JacobiP(0.0, 0, 0, 0) == [1.0 /sqrt(2.0)]
 
 # Test Gauss-Lobatto points
 
