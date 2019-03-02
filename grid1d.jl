@@ -116,6 +116,7 @@ end
 
 # Compute LIFT
 function Lift1D(Np, Nfaces, Nfp, V)
+    print(Np,", ", Nfaces, ", ", Nfp)
     Emat = zeros(Np, Nfaces*Nfp)
     
     # Define Emat
@@ -126,20 +127,29 @@ function Lift1D(Np, Nfaces, Nfp, V)
     V*(V'*Emat);
 end
 
+struct Quadrature1D
+    # locations in reference cell [-1,1]
+    locations::Array{Float64, 1}
+    weights::Array{Float64, 1}
+end
+
+"Compute LGL quadrature points on reference cell [-1,1]"
+function gaussLobatto1D(npoints)
+    r, w = gausslobatto(npoints)
+    Quadrature1D(r, w)
+end
 
 "Describes a 1D grid with K cells"
 mutable struct Grid1D
-    K::Int # Number of cells
-    Np::Int # Number of points per cell
-    Nfp::Int # Number of points on a face
-    Nfaces::Int # Number of faces per cell
+    
+    mesh::Mesh1D # Defines node locations and cells
+    
+    npoints::Int # Number of points per cell, including edges (Np)
+    npoints_per_face::Int # Number of points on a face
+    nfaces::Int # Number of faces per cell
 
-    VX::Array{Float64,1} # Array of vertex locations (K+1)
-    EToV::Array{Int,2}   # Cell vertices for each cell
-
-    r::Array{Float64,1} # node locations in reference cell [-1,1]
-    w::Array{Float64,1}
-
+    quadrature::Quadrature1D
+    
     V    # Vandermonde matrix on reference cell
     invV # Inverse Vandermonde matrix
     Dr   # Differentiation matrix
@@ -166,39 +176,37 @@ mutable struct Grid1D
     vmapI
     vmapO
     
-    function Grid1D(mesh::Mesh1D, N::Int)
-
-        vertices = mesh.node_coordinates
-        cells = mesh.element_nodes
+    function Grid1D(mesh::Mesh1D, quadrature::Quadrature1D)
         
         # Create an instance. Not yet initialised
         # This is to avoid a long constructor parameter list
         g = new()
         
-        g.VX = vertices
-        g.EToV = cells
-
-        g.K = size(g.EToV)[1] # Number of cells
-        g.Np = N+1 # Number of points per cell (including edges)
-        g.Nfaces = 2 # Number of faces per cell
-        g.Nfp = 1  # Number of points per face
+        g.mesh = mesh
         
-        # Compute LGL grid on reference cell
-        g.r, g.w = gausslobatto(N+1)
+        K = mesh.nelements # Number of cells
 
+        g.npoints = length(quadrature.locations)
+        g.nfaces = 2 # Number of faces per cell
+        g.npoints_per_face = 1  # Number of points per face
+
+        g.quadrature = quadrature
+
+        N = length(quadrature.locations)-1
+        
         # Build reference element matrices
-        g.V = Vandermonde1D(N, g.r)
+        g.V = Vandermonde1D(N, quadrature.locations)
         g.invV = inv(g.V)
 
         # Differentiation matrix on reference element
-        g.Dr = Dmatrix1D(N, g.r, g.V)
+        g.Dr = Dmatrix1D(N, quadrature.locations, g.V)
 
-        g.LIFT = Lift1D(g.Np, g.Nfaces, g.Nfp, g.V)
+        g.LIFT = Lift1D(g.npoints, g.nfaces, g.npoints_per_face, g.V)
         
         # Coordinates of all the nodes
-        va = g.EToV[:,1]'
-        vb = g.EToV[:,2]'
-        g.x = ones(N+1,1)*g.VX[va] .+ 0.5*(g.r .+ 1)*(g.VX[vb] - g.VX[va])
+        va = mesh.element_nodes[:,1]'
+        vb = mesh.element_nodes[:,2]'
+        g.x = ones(N+1,1)*mesh.node_coordinates[va] .+ 0.5*(quadrature.locations  .+ 1)*(mesh.node_coordinates[vb] - g.mesh.node_coordinates[va])
 
         # Geometric factors
         g.J = g.Dr * g.x
@@ -212,14 +220,14 @@ mutable struct Grid1D
         g.Fscale = 1.0 ./ g.J[Fmask,:]
         
         # Compute outward pointing normals
-        g.nx = zeros(g.Nfaces, g.K)
+        g.nx = zeros(g.nfaces, mesh.nelements)
         g.nx[1,:] .= -1
         g.nx[2,:] .= 1
 
         # Build global connectivity arrays
-        EToE, EToF = Connect1D(g.EToV)
+        EToE, EToF = Connect1D(mesh.element_nodes)
         
-        g.vmapP, g.vmapM, g.mapB, g.vmapB, g.mapI, g.mapO, g.vmapI, g.vmapO = BuildMaps1D(g.K, 2, 1, g.Np, Fmask, EToE, EToF, g.x)
+        g.vmapP, g.vmapM, g.mapB, g.vmapB, g.mapI, g.mapO, g.vmapI, g.vmapO = BuildMaps1D(mesh.nelements, 2, 1, g.npoints, Fmask, EToE, EToF, g.x)
 
         return g
     end

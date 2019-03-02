@@ -12,7 +12,7 @@ function AdvecRHS1D(u, time, grid, a)
     # form field differences at faces
     alpha = 0.5
     
-    du = zeros(grid.Nfp*grid.Nfaces,grid.K); 
+    du = zeros(grid.npoints_per_face*grid.nfaces, grid.mesh.nelements); 
     du[:] = (u[grid.vmapM[:]]-u[grid.vmapP[:]]).*(a*grid.nx[:]-(1-alpha)*abs.(a*grid.nx[:]))/2
     
     # impose boundary condition at x=0
@@ -51,7 +51,7 @@ K = 5
 mesh = NodalDG.MeshGen1D(0.0,2.0*pi,K)
 
 # Initialize solver and construct grid and metric
-grid = NodalDG.Grid1D(mesh, N)
+grid = NodalDG.Grid1D(mesh, NodalDG.gaussLobatto1D(N))
 
 using PyPlot: plot, show
 
