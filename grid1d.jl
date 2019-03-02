@@ -101,9 +101,6 @@ function BuildMaps1D(K::Int, Nfaces::Int, Nfp::Int, Np::Int, Fmask, EToE, EToF, 
         end
     end
     
-    #vmapP = vmapP[:]
-    #vmapM = vmapM[:]
-
     # Find where vmapP == vmapM
     mapB = findall(iszero, vmapP - vmapM)
     vmapB = vmapM[mapB]
@@ -169,8 +166,11 @@ mutable struct Grid1D
     vmapI
     vmapO
     
-    function Grid1D(vertices::Array{Float64,1}, cells::Array{Int,2}, N::Int)
+    function Grid1D(mesh::Mesh1D, N::Int)
 
+        vertices = mesh.node_coordinates
+        cells = mesh.element_nodes
+        
         # Create an instance. Not yet initialised
         # This is to avoid a long constructor parameter list
         g = new()

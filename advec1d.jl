@@ -48,10 +48,10 @@ N = 5
 K = 5
 
 # Generate simple mesh
-Nv, VX, K, EToV = NodalDG.MeshGen1D(0.0,2.0*pi,K)
+mesh = NodalDG.MeshGen1D(0.0,2.0*pi,K)
 
 # Initialize solver and construct grid and metric
-grid = NodalDG.Grid1D(VX, EToV, N)
+grid = NodalDG.Grid1D(mesh, N)
 
 using PyPlot: plot, show
 
