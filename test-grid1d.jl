@@ -6,7 +6,7 @@ using Test
 VX = [0.0, 1.0, 2.0, 3.0]
 EToV = [1 2; 2 3; 3 4]
 
-g = NodalDG.Grid1D(VX, EToV, 2)
+g = NodalDG.Grid1D(NodalDG.Mesh1D(VX, EToV), NodalDG.gaussLobatto1D(2))
 
 println(g.vmapM, g.vmapP)
 
