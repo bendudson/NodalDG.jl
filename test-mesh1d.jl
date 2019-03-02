@@ -12,10 +12,10 @@ using Test
 
 let mesh = NodalDG.Mesh1D([0, 1, 2, 3],
                           [[1 2]; [2 3]; [3 4]])
-    @test mesh.nnodes == 4
-    @test isapprox(mesh.node_coordinates, [0, 1, 2, 3])
+    @test mesh.nvertices == 4
+    @test isapprox(mesh.vertex_coordinates, [0, 1, 2, 3])
     @test mesh.nelements == 3
-    @test mesh.element_nodes == [[1 2]; [2 3]; [3 4]]
+    @test mesh.element_vertices == [[1 2]; [2 3]; [3 4]]
 end
 
 end

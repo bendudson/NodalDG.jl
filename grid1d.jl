@@ -203,10 +203,10 @@ mutable struct Grid1D
 
         g.LIFT = Lift1D(g.npoints, g.nfaces, g.npoints_per_face, g.V)
         
-        # Coordinates of all the nodes
-        va = mesh.element_nodes[:,1]'
-        vb = mesh.element_nodes[:,2]'
-        g.x = ones(N+1,1)*mesh.node_coordinates[va] .+ 0.5*(quadrature.locations  .+ 1)*(mesh.node_coordinates[vb] - g.mesh.node_coordinates[va])
+        # Coordinates of all the vertices
+        va = mesh.element_vertices[:,1]'
+        vb = mesh.element_vertices[:,2]'
+        g.x = ones(N+1,1)*mesh.vertex_coordinates[va] .+ 0.5*(quadrature.locations  .+ 1)*(mesh.vertex_coordinates[vb] - g.mesh.vertex_coordinates[va])
 
         # Geometric factors
         g.J = g.Dr * g.x
@@ -225,7 +225,7 @@ mutable struct Grid1D
         g.nx[2,:] .= 1
 
         # Build global connectivity arrays
-        EToE, EToF = Connect1D(mesh.element_nodes)
+        EToE, EToF = Connect1D(mesh.element_vertices)
         
         g.vmapP, g.vmapM, g.mapB, g.vmapB, g.mapI, g.mapO, g.vmapI, g.vmapO = BuildMaps1D(mesh.nelements, 2, 1, g.npoints, Fmask, EToE, EToF, g.x)
 
