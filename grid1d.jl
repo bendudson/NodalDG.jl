@@ -2,6 +2,7 @@
 using LinearAlgebra
 using SparseArrays
 
+using FastGaussQuadrature
 
 "Construct the Element-To-Element (EToE) and
 Element-To-Face (EtoF) maps
@@ -139,7 +140,36 @@ function gaussLobatto1D(npoints)
     Quadrature1D(r, w)
 end
 
-"Describes a 1D grid with K cells"
+struct ReferenceCell
+    basis
+    quadrature::Quadrature1D
+    
+    V    # Vandermonde matrix on reference cell
+    invV # Inverse Vandermonde matrix
+    Dr   # Differentiation matrix
+
+    function ReferenceCell(basis, quadrature)
+        V = zeros(length(quadrature.locations), basis.order)
+        Dr = zeros(length(quadrature.locations), basis.order)
+
+        # Calculate basis function at each quadrature location
+        # (Vandermonde matrix)
+        #   V[i,j] = P_j(x_i)
+        #
+        # DVr is the differentiation matrix
+        # 
+        for j=1:basis.order
+            V[:,j] = basisFunction(basis, quadrature.locations, j)
+            Dr[:,j] = basisGradient(basis, quadrature.locations, j)
+        end
+        Dr /= V
+        
+        new(basis, quadrature,
+            V, inv(V), Dr)
+    end
+end
+
+"Describes a 1D grid"
 mutable struct Grid1D
     
     mesh::Mesh1D # Defines node locations and cells
@@ -148,12 +178,8 @@ mutable struct Grid1D
     npoints_per_face::Int # Number of points on a face
     nfaces::Int # Number of faces per cell
 
-    quadrature::Quadrature1D
+    reference::ReferenceCell
     
-    V    # Vandermonde matrix on reference cell
-    invV # Inverse Vandermonde matrix
-    Dr   # Differentiation matrix
-
     LIFT # Surface integral terms
     
     J    # Jacobian [point, cell]
@@ -176,7 +202,7 @@ mutable struct Grid1D
     vmapI
     vmapO
     
-    function Grid1D(mesh::Mesh1D, quadrature::Quadrature1D)
+    function Grid1D(mesh::Mesh1D, basis, quadrature::Quadrature1D)
         
         # Create an instance. Not yet initialised
         # This is to avoid a long constructor parameter list
@@ -184,24 +210,15 @@ mutable struct Grid1D
         
         g.mesh = mesh
         
-        K = mesh.nelements # Number of cells
-
         g.npoints = length(quadrature.locations)
         g.nfaces = 2 # Number of faces per cell
         g.npoints_per_face = 1  # Number of points per face
 
-        g.quadrature = quadrature
+        g.reference = ReferenceCell(basis, quadrature)
 
         N = length(quadrature.locations)-1
         
-        # Build reference element matrices
-        g.V = Vandermonde1D(N, quadrature.locations)
-        g.invV = inv(g.V)
-
-        # Differentiation matrix on reference element
-        g.Dr = Dmatrix1D(N, quadrature.locations, g.V)
-
-        g.LIFT = Lift1D(g.npoints, g.nfaces, g.npoints_per_face, g.V)
+        g.LIFT = Lift1D(g.npoints, g.nfaces, g.npoints_per_face, g.reference.V)
         
         # Coordinates of all the vertices
         va = mesh.element_vertices[:,1]'
@@ -209,7 +226,7 @@ mutable struct Grid1D
         g.x = ones(N+1,1)*mesh.vertex_coordinates[va] .+ 0.5*(quadrature.locations  .+ 1)*(mesh.vertex_coordinates[vb] - g.mesh.vertex_coordinates[va])
 
         # Geometric factors
-        g.J = g.Dr * g.x
+        g.J = g.reference.Dr * g.x
         g.rx = 1.0 ./ g.J
 
         fmask1 = 1

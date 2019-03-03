@@ -21,7 +21,7 @@ function AdvecRHS1D(u, time, grid, a)
     du[grid.mapO] = 0
 
     # compute right hand sides of the semi-discrete PDE
-    rhsu = -a*grid.rx.*(grid.Dr*u) + grid.LIFT*(grid.Fscale.*(du))
+    rhsu = -a*grid.rx.*(grid.reference.Dr*u) + grid.LIFT*(grid.Fscale.*(du))
     
     return rhsu
 end
@@ -51,7 +51,7 @@ K = 5
 mesh = NodalDG.MeshGen1D(0.0,2.0*pi,K)
 
 # Initialize solver and construct grid and metric
-grid = NodalDG.Grid1D(mesh, NodalDG.gaussLobatto1D(N))
+grid = NodalDG.Grid1D(mesh, NodalDG.JacobiBasis1D(N), NodalDG.gaussLobatto1D(N))
 
 using PyPlot: plot, show
 

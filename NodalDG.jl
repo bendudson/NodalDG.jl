@@ -7,13 +7,14 @@
 
 
 module NodalDG
-include("utils.jl")
 
 include("meshgen1d.jl")
 
 include("grid1d.jl")
 
 include("lserk.jl")
+
+include("jacobi-basis.jl")
 
 end
 
