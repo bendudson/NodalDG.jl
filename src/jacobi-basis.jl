@@ -1,5 +1,4 @@
 
-using FastGaussQuadrature
 using SpecialFunctions: gamma
 
 "
@@ -45,14 +44,6 @@ function JacobiP(x, alpha, beta, N::Int)
     return PL[:,end]
 end
 
-function Vandermonde1D(N::Int,r)
-    V = zeros(length(r), N+1)
-    for j=1:(N+1)
-        V[:,j] = JacobiP(r, 0, 0, j-1)
-    end
-    return V
-end
-
 "Evaluate the derivative of the Jacobi polynomial
 of type (alpha,beta) > -1 at points r for order N
 
@@ -67,21 +58,14 @@ function GradJacobiP(r, alpha, beta, N::Int)
     end
 end
 
-"Initialise the gradient of the modal basis
-at order N"
-function GradVandermonde1D(N::Int, r)
-    DVr = zeros(length(r), N+1)
-
-    for i=0:N
-        DVr[:,i+1] = GradJacobiP(r,0,0,i)
-    end
-    return DVr
+struct JacobiBasis1D
+    order::Int  # Number of polynomials
 end
 
-"Initialise the r differentiation matrices on the interval,
-evaluated at r at order N
-"
-function Dmatrix1D(N::Int, r, V)
-    Vr = GradVandermonde1D(N, r)
-    return Vr / V
+function basisFunction(basis::JacobiBasis1D, locations, index::Int)
+    JacobiP(locations, 0, 0, index-1)
+end
+
+function basisGradient(basis::JacobiBasis1D, locations, index::Int)
+    GradJacobiP(locations,0,0,index-1)
 end

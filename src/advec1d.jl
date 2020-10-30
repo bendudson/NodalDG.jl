@@ -12,7 +12,7 @@ function AdvecRHS1D(u, time, grid, a)
     # form field differences at faces
     alpha = 0.5
     
-    du = zeros(grid.Nfp*grid.Nfaces,grid.K); 
+    du = zeros(grid.npoints_per_face*grid.nfaces, grid.mesh.nelements); 
     du[:] = (u[grid.vmapM[:]]-u[grid.vmapP[:]]).*(a*grid.nx[:]-(1-alpha)*abs.(a*grid.nx[:]))/2
     
     # impose boundary condition at x=0
@@ -21,7 +21,7 @@ function AdvecRHS1D(u, time, grid, a)
     du[grid.mapO] = 0
 
     # compute right hand sides of the semi-discrete PDE
-    rhsu = -a*grid.rx.*(grid.Dr*u) + grid.LIFT*(grid.Fscale.*(du))
+    rhsu = -a*grid.rx.*(grid.reference.Dr*u) + grid.LIFT*(grid.Fscale.*(du))
     
     return rhsu
 end
@@ -48,10 +48,10 @@ N = 5
 K = 5
 
 # Generate simple mesh
-Nv, VX, K, EToV = NodalDG.MeshGen1D(0.0,2.0*pi,K)
+mesh = NodalDG.MeshGen1D(0.0,2.0*pi,K)
 
 # Initialize solver and construct grid and metric
-grid = NodalDG.Grid1D(VX, EToV, N)
+grid = NodalDG.Grid1D(mesh, NodalDG.JacobiBasis1D(N), NodalDG.gaussLobatto1D(N))
 
 using PyPlot: plot, show
 

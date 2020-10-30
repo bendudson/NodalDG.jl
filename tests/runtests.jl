@@ -2,9 +2,9 @@
 
 using Test
 
-include("NodalDG.jl")
+using NodalDG.jl
 
-for file in ["test-utils.jl", "test-grid1d.jl"]
+for file in ["test-utils.jl", "test-mesh1d.jl", "test-grid1d.jl"]
     println("Tests in ", file)
     @time include(file)
 end
