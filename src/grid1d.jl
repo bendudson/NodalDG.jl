@@ -140,6 +140,15 @@ function gaussLobatto1D(npoints)
     Quadrature1D(r, w)
 end
 
+function equidistant1D(npoints)
+    r = range(-1, stop=1, length=npoints)
+    w = fill(2.0 / npoints, npoints)
+    Quadrature1D(r, w)
+end
+
+"Describes the basis functions and quadrature nodes on a reference cell.
+The matrices derived on this cell can be applied to all cells
+by including the geometrical scaling factors."
 struct ReferenceCell
     basis
     quadrature::Quadrature1D
